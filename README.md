@@ -15,7 +15,7 @@ FIXME
 ## License
 
 The source code is distributed under Eclipse Public License. Please cite 
-[the paper](http://dl.acm.org/citation.cfm?id=2632953) if you include the code
-in your project's codebase.
+[the paper](http://dl.acm.org/citation.cfm?id=2632953) if you use the code
+in your project.
 
 Copyright © 2012 Bruce Li
