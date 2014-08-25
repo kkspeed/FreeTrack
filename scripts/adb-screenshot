@@ -1,0 +1,112 @@
+#!/bin/bash
+#
+# adb-screenshot - simple script to take screenshots of android devices
+#
+# Requires: 'ffmpeg' and 'adb' to be somewhere in the PATH
+#
+# Author: Kevin C. Krinke 
+# License: Public Domain
+
+# globals / constants
+NAME=$(basename $0)
+TGT=$1
+SRC=/sdcard/${NAME}.png
+TMP=/tmp/${NAME}.$$
+RAW=/tmp/${NAME}.raw
+FFMPEG=$(which ffmpeg)
+ADB=$(which adb)
+DD=$(which dd)
+USB_DEVICE=""
+
+# remove transitory files if exist
+function cleanup () {
+    [ -f "${RAW}" ] && rm -f "${RAW}"
+    [ -f "${TMP}" ] && rm -f "${TMP}"
+    [ -z "$1" ] && die "aborting process now."
+    exit 0
+}
+
+# exit with an error
+function die () {
+    echo "Critical Error: $@"
+    exit 1
+}
+
+# catch all signals and cleanup / dump
+trap cleanup \
+    SIGHUP SIGINT SIGQUIT SIGILL SIGTRAP SIGABRT SIGFPE \
+    SIGKILL SIGBUS SIGSEGV SIGSYS SIGPIPE SIGALRM SIGTERM SIGURG \
+    SIGSTOP SIGTSTP SIGCONT SIGCHLD SIGTTIN SIGTTOU SIGIO SIGXCPU \
+    SIGXFSZ SIGVTALRM SIGPROF SIGWINCH SIGUSR1 SIGUSR2
+
+# adb is absolutely required
+[ -x "${ADB}" ] || die "ADB is missing!"
+
+# cheap getopt
+while [ $# -gt 0 ]
+do
+    case "$1" in
+        "-h"|"--help")
+            echo "usage: $(basename $0) [-h|--help] [-s SERIAL] [/path/to/output.png]"
+            exit 1
+            ;;
+        "-s")
+            [ -z "$2" ] && die "Missing argument for option \"-s\", try \"${NAME} --help\""
+            HAS_DEVICE=$(${ADB} devices | grep "$2" )
+            [ -z "${HAS_DEVICE}" ] && die "No device found with serial $2"
+            USB_DEVICE="$2"
+            ;;
+        *)
+            [ -n "$1" -a -d "$(dirname $1)" ] && TGT="$1"
+            ;;
+    esac
+    shift
+done
+
+# prep target with fire
+[ -f "${TGT}" ] && rm -f "${TGT}"
+
+# tweak ADB command line
+if [ -n "${USB_DEVICE}" ]
+then
+    ADB="$(which adb) -s ${USB_DEVICE}"
+fi
+
+# calculate resolution
+DISPLAY_RAW=$(${ADB} shell dumpsys window)
+HRES=$(echo "${DISPLAY_RAW}" | grep SurfaceWidth  | head -1 | perl -pe 's/^.*\bSurfaceWidth\:\s*(\d+)px\b.*$/$1/')
+VRES=$(echo "${DISPLAY_RAW}" | grep SurfaceHeight | head -1 | perl -pe 's/^.*\bSurfaceHeight\:\s*(\d+)px\b.*$/$1/')
+RES=${HRES}x${VRES}
+
+# check for screencap binary
+HAS_SCREENCAP=$(${ADB} shell "[ -x /system/bin/screencap ] && echo 1 || echo 0" | perl -pe 's/\D+//g')
+if [ "$HAS_SCREENCAP" == "1" ]
+then # use screencap to get the image easy-peasy
+    echo -n "Getting ${RES} screencap... "
+    ( ${ADB} shell /system/bin/screencap ${SRC} 2>&1 ) > /dev/null
+    [ "$?" != "0" ] && die "Failed to execute screencap"
+    ( ${ADB} pull ${SRC} ${TMP} 2>&1 ) > /dev/null
+    [ "$?" != "0" ] && die "Failed to pull png image"
+    ( ${ADB} shell rm ${SRC} 2>&1 ) > /dev/null
+    [ "$?" != "0" ] && die "Failed to remove png image"
+    mv ${TMP} ${TGT}
+    echo "wrote: ${TGT}"
+else # fetch a framebuffer snapshot
+    # ffmpeg is only needed if device is pre-ICS
+    [ -x "${FFMPEG}" ] || die "FFMPEG is missing!"
+    [ -x "${DD}" ] || die "DD is missing!"
+    echo -n "Getting ${RES} framebuffer... "
+    ( ${ADB} pull /dev/graphics/fb0 ${RAW} 2>&1 ) > /dev/null
+    [ "$?" != "0" ] && die "Failed to pull raw image data"
+    # calculate dd parameters
+    COUNT=$((HRES*4))
+    BLOCKSIZE=$((VRES))
+    ( ${DD} bs=${BLOCKSIZE} count=${COUNT} if=${RAW} of=${TMP} 2>&1 ) > /dev/null
+    [ "$?" != "0" ] && die "Failed to realign raw image data"
+    ( ${FFMPEG} -vframes 1 -vcodec rawvideo -f rawvideo -pix_fmt rgb32 -s ${RES} -i ${TMP} -f image2 -vcodec png ${TGT} 2>&1 ) > /dev/null
+    [ "$?" != "0" ] && die "Failed to encode PNG image"
+    echo "wrote: ${TGT}"
+fi
+
+# exit app normal
+cleanup 1

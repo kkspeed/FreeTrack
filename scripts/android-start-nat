@@ -1,0 +1,6 @@
+#!/system/xbin/sh
+DEST_IP=$1
+DEST_PORT=$2
+FORWARD_TARGET=$3
+
+su -c "iptables -t nat -A OUTPUT -p tcp -d $DEST_IP --dport $DEST_PORT -j DNAT --to $FORWARD_TARGET"

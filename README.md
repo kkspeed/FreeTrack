@@ -1,4 +1,21 @@
-FreeTrack
-=========
+# FreeTrack
 
-Location tracking of mobile social network users
+This project allows mobile social network user location tracking. 
+
+## More materials
+
+Please refer to the [research paper](http://dl.acm.org/citation.cfm?id=2632953)
+and the presentation in MobiHoc'14 
+[presentation](http://www-student.cse.buffalo.edu/~muyuanli/presentations/mobihoc14/assets/player/KeynoteDHTMLPlayer.html)
+
+## Usage
+
+FIXME
+
+## License
+
+The source code is distributed under Eclipse Public License. Please cite 
+[the paper](http://dl.acm.org/citation.cfm?id=2632953) if you include the code
+in your project's codebase.
+
+Copyright © 2012 Bruce Li
