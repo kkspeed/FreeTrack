@@ -5,8 +5,8 @@ This project allows mobile social network user location tracking.
 ## More materials
 
 Please refer to the [research paper](http://dl.acm.org/citation.cfm?id=2632953) 
-published in MobiHoc'14 and the 
-[presentation](http://www-student.cse.buffalo.edu/~muyuanli/presentations/mobihoc14/assets/player/KeynoteDHTMLPlayer.html).
+published in MobiHoc'14, the [extended version](http://arxiv.org/pdf/1310.2547v2.pdf)
+and the [presentation](http://www-student.cse.buffalo.edu/~muyuanli/presentations/mobihoc14/assets/player/KeynoteDHTMLPlayer.html).
 
 ## Usage
 
