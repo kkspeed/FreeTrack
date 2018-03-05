@@ -1,6 +1,6 @@
 # FreeTrack
 
-This project allows mobile social network user location tracking. 
+This project allows mobile social network user location tracking. [Demo Video](http://www-student.cse.buffalo.edu/~muyuanli/attach/mobihoc14_demo.m4v)
 
 ## More materials
 
